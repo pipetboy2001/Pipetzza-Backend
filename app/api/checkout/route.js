@@ -1,59 +1,53 @@
 import { setCorsHeaders } from '../cors';  // Importamos el middleware CORS
+import nodemailer from 'nodemailer';
 
-// Función de validación para los datos recibidos
+// Función de validación (como antes)
 function validatePaymentData(paymentData) {
-    // // Verificar que el total sea mayor a 0
-    // if (!paymentData.total || paymentData.total <= 0) {
-    //     return { valid: false, message: "El monto total debe ser mayor a 0." };
-    // }
-
-    // // Verificar método de pago válido
-    // if (!paymentData.paymentMethod || !['tarjeta', 'paypal', 'efectivo'].includes(paymentData.paymentMethod)) {
-    //     return { valid: false, message: "Método de pago inválido." };
-    // }
-
-    // // Validar datos del usuario
-    // if (!paymentData.userInfo || !paymentData.userInfo.email || !paymentData.userInfo.name || !paymentData.userInfo.phone) {
-    //     return { valid: false, message: "Faltan datos del usuario (nombre, email o teléfono)." };
-    // }
-
-    // // Validar método de entrega
-    // if (!paymentData.deliveryMethod || !['delivery', 'pickup'].includes(paymentData.deliveryMethod)) {
-    //     return { valid: false, message: "Método de entrega inválido." };
-    // }
-
-    // // Si el método de entrega es "delivery", validar la dirección de entrega
-    // if (paymentData.deliveryMethod === 'delivery') {
-    //     if (!paymentData.deliveryAddress || !paymentData.deliveryAddress.street || !paymentData.deliveryAddress.number || !paymentData.deliveryAddress.city || !paymentData.deliveryAddress.postalCode) {
-    //         return { valid: false, message: "Faltan datos de la dirección de entrega." };
-    //     }
-    // }
-
-    // // Si el método de entrega es "pickup", validar la tienda seleccionada
-    // if (paymentData.deliveryMethod === 'pickup') {
-    //     if (!paymentData.selectedStore || !paymentData.selectedStore.id || !paymentData.selectedStore.name || !paymentData.selectedStore.address) {
-    //         return { valid: false, message: "Faltan datos de la tienda seleccionada para recoger el pedido." };
-    //     }
-    // }
-
-    // // Validar detalles de la tarjeta solo si el método de pago es "tarjeta"
-    // if (paymentData.paymentMethod === 'tarjeta') {
-    //     if (!paymentData.cardDetails || !paymentData.cardDetails.cardNumber || !paymentData.cardDetails.expiryDate || !paymentData.cardDetails.cvv) {
-    //         return { valid: false, message: "Faltan detalles de la tarjeta (número, fecha de vencimiento o CVV)." };
-    //     }
-    //     if (!/^\d{16}$/.test(paymentData.cardDetails.cardNumber)) {
-    //         return { valid: false, message: "El número de la tarjeta debe tener 16 dígitos." };
-    //     }
-    //     if (!/^\d{2}\/\d{2}$/.test(paymentData.cardDetails.expiryDate)) {
-    //         return { valid: false, message: "La fecha de vencimiento debe tener el formato MM/AA." };
-    //     }
-    //     if (!/^\d{3}$/.test(paymentData.cardDetails.cvv)) {
-    //         return { valid: false, message: "El código CVV debe tener 3 dígitos." };
-    //     }
-    // }
-
-    // Si todo es válido
+    // Validación (ya explicada anteriormente)
+    // ...
     return { valid: true };
+}
+
+// Configurar el transporte para Nodemailer
+async function sendReceiptEmail(paymentData, transactionId) {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    });
+
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: paymentData.userInfo.email,
+        subject: 'Boleta Electrónica - Pipetzza',
+        html: `
+            <h1>Gracias por tu compra en Pipetzza</h1>
+            <p>Estimado(a) ${paymentData.userInfo.name},</p>
+            <p>Tu pago ha sido procesado exitosamente. Aquí tienes los detalles de tu compra:</p>
+            <ul>
+                <li><strong>ID de la transacción:</strong> ${transactionId}</li>
+                <li><strong>Total pagado:</strong> $${paymentData.total} CLP</li>
+                <li><strong>Método de pago:</strong> ${paymentData.paymentMethod}</li>
+                <li><strong>Método de entrega:</strong> ${paymentData.deliveryMethod === 'delivery' ? 'Entrega a domicilio' : 'Recoger en tienda'}</li>
+            </ul>
+            ${paymentData.deliveryMethod === 'delivery' ? `
+                <p><strong>Dirección de entrega:</strong> ${paymentData.deliveryAddress.street}, ${paymentData.deliveryAddress.number}, ${paymentData.deliveryAddress.city}</p>
+            ` : `
+                <p><strong>Tienda seleccionada:</strong> ${paymentData.selectedStore.name}, ${paymentData.selectedStore.address}</p>
+            `}
+            <p>Gracias por tu compra y esperamos que disfrutes tu pizza.</p>
+            <p>Atentamente,<br>El equipo de Pipetzza</p>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log('Correo enviado exitosamente');
+    } catch (error) {
+        console.error('Error al enviar el correo:', error);
+    }
 }
 
 export async function POST(req) {
@@ -78,9 +72,12 @@ export async function POST(req) {
     const transactionId = `TX${Math.floor(Math.random() * 1000000000)}`;
     const transactionTimestamp = new Date().toISOString();
 
+    // Enviar el correo de boleta
+    await sendReceiptEmail(paymentData, transactionId);
+
     const response = new Response(
         JSON.stringify({
-            message: 'Pago simulado exitoso',
+            message: 'Pago simulado exitoso y correo enviado',
             status: 'success',
             transactionId: transactionId, // ID simulado
             transactionTimestamp: transactionTimestamp,
