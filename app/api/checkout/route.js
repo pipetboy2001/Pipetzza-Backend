@@ -46,7 +46,7 @@ async function sendReceiptEmail(paymentData, transactionId) {
             <p><strong>RUT de la empresa:</strong> 12.345.678-9</p>
             <p><strong>Restaurant - Autoservicio</strong></p>
 
-            <h2>Boleta Electrónica N° 12345678</h2>
+            <h2>Boleta Electrónica N° ${transactionId}</h2>
 
             <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
             <p><strong>Hora:</strong> ${new Date().toLocaleTimeString()}</p>
@@ -69,7 +69,7 @@ async function sendReceiptEmail(paymentData, transactionId) {
 
             <hr/>
 
-            <p><strong>Neto:</strong> $${(paymentData.total * 0.84).toFixed(2)} (Total - 16%)</p>
+            <p><strong>Neto:</strong> $${(paymentData.total * 0.84).toFixed(2)}</p>
             <p><strong>IVA (16%):</strong> $${(paymentData.total * 0.16).toFixed(2)}</p>
             <p><strong>Total:</strong> $${paymentData.total.toFixed(2)}</p>
 
