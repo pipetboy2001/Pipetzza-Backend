@@ -3,8 +3,15 @@ import nodemailer from 'nodemailer';
 
 // Función de validación (como antes)
 function validatePaymentData(paymentData) {
-    // Validación (ya explicada anteriormente)
-    // ...
+    if (!paymentData.total || paymentData.total <= 0) {
+        return { valid: false, message: "El monto total debe ser mayor a 0." };
+    }
+
+    // Validar datos del usuario
+    if (!paymentData.userInfo || !paymentData.userInfo.email || !paymentData.userInfo.name || !paymentData.userInfo.phone) {
+        return { valid: false, message: "Faltan datos del usuario (nombre, email o teléfono)." };
+    }
+
     return { valid: true };
 }
 
@@ -18,28 +25,69 @@ async function sendReceiptEmail(paymentData, transactionId) {
         }
     });
 
+    // Generar la tabla de productos
+    const productRows = paymentData.carrito.map(item => `
+        <tr>
+            <td>${item.quantity}</td>
+            <td>${item.title}</td>
+            <td>$${item.price}</td>
+        </tr>
+    `).join('');
+
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: paymentData.userInfo.email,
         subject: 'Boleta Electrónica - Pipetzza',
         html: `
-            <h1>Gracias por tu compra en Pipetzza</h1>
-            <p>Estimado(a) ${paymentData.userInfo.name},</p>
-            <p>Tu pago ha sido procesado exitosamente. Aquí tienes los detalles de tu compra:</p>
-            <ul>
-                <li><strong>ID de la transacción:</strong> ${transactionId}</li>
-                <li><strong>Total pagado:</strong> $${paymentData.total} CLP</li>
-                <li><strong>Método de pago:</strong> ${paymentData.paymentMethod}</li>
-                <li><strong>Método de entrega:</strong> ${paymentData.deliveryMethod === 'delivery' ? 'Entrega a domicilio' : 'Recoger en tienda'}</li>
-            </ul>
+            <div style="text-align: center;">
+                <img src="https://i.imgur.com/D1GXxkt.png" alt="Logo Pipetzza" style="width: 150px;"/>
+            </div>
+
+            <p><strong>RUT de la empresa:</strong> 12.345.678-9</p>
+            <p><strong>Restaurant - Autoservicio</strong></p>
+
+            <h2>Boleta Electrónica N° 12345678</h2>
+
+            <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Hora:</strong> ${new Date().toLocaleTimeString()}</p>
+
+            <hr/>
+
+            <h3>Detalles de tu compra:</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">Cantidad</th>
+                        <th style="text-align: left;">Producto</th>
+                        <th style="text-align: left;">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${productRows}
+                </tbody>
+            </table>
+
+            <hr/>
+
+            <p><strong>Neto:</strong> $${(paymentData.total * 0.84).toFixed(2)} (Total - 16%)</p>
+            <p><strong>IVA (16%):</strong> $${(paymentData.total * 0.16).toFixed(2)}</p>
+            <p><strong>Total:</strong> $${paymentData.total.toFixed(2)}</p>
+
+            <hr/>
+
+            <p><strong>Método de pago:</strong> ${paymentData.paymentMethod}</p>
+            <p><strong>Método de entrega:</strong> ${paymentData.deliveryMethod === 'delivery' ? 'Entrega a domicilio' : 'Recoger en tienda'}</p>
+            
             ${paymentData.deliveryMethod === 'delivery' ? `
                 <p><strong>Dirección de entrega:</strong> ${paymentData.deliveryAddress.street}, ${paymentData.deliveryAddress.number}, ${paymentData.deliveryAddress.city}</p>
             ` : `
                 <p><strong>Tienda seleccionada:</strong> ${paymentData.selectedStore.name}, ${paymentData.selectedStore.address}</p>
             `}
+
             <p>Gracias por tu compra y esperamos que disfrutes tu pizza.</p>
+
             <p>Atentamente,<br>El equipo de Pipetzza</p>
-        `
+        `,
     };
 
     try {
