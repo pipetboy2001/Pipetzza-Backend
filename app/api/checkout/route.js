@@ -9,8 +9,11 @@ function validatePaymentData(paymentData) {
     if (!paymentData.paymentMethod || !['tarjeta', 'paypal', 'efectivo'].includes(paymentData.paymentMethod)) {
         return { valid: false, message: "Método de pago inválido." };
     }
-    if (!paymentData.userId || !paymentData.email || !paymentData.name) {
-        return { valid: false, message: "Faltan datos del usuario (ID, email o nombre)." };
+    if (!paymentData.deliveryMethod || !['delivery', 'pickup'].includes(paymentData.deliveryMethod)) {
+        return { valid: false, message: "Método de entrega inválido." };
+    }
+    if (!paymentData.userInfo || !paymentData.userInfo.email || !paymentData.userInfo.name || !paymentData.userInfo.phone) {
+        return { valid: false, message: "Faltan datos del usuario (email, nombre o teléfono)." };
     }
     if (!paymentData.cardDetails || !paymentData.cardDetails.cardNumber || !paymentData.cardDetails.expiryDate || !paymentData.cardDetails.cvv) {
         return { valid: false, message: "Faltan detalles de la tarjeta (número, fecha de vencimiento o CVV)." };
@@ -23,6 +26,9 @@ function validatePaymentData(paymentData) {
     }
     if (!/^\d{3}$/.test(paymentData.cardDetails.cvv)) {
         return { valid: false, message: "El código CVV debe tener 3 dígitos." };
+    }
+    if (!paymentData.deliveryAddress || !paymentData.deliveryAddress.street || !paymentData.deliveryAddress.number || !paymentData.deliveryAddress.city || !paymentData.deliveryAddress.postalCode) {
+        return { valid: false, message: "Faltan datos de la dirección de entrega." };
     }
     return { valid: true };
 }
@@ -57,6 +63,7 @@ export async function POST(req) {
             transactionTimestamp: transactionTimestamp,
             totalAmount: paymentData.total, // El monto real
             currency: 'CLP', // Moneda simulada
+            deliveryAddress: paymentData.deliveryAddress // Agregar la dirección de entrega
         }),
         { status: 200 }
     );
