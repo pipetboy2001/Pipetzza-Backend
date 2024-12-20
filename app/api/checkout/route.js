@@ -26,13 +26,14 @@ async function sendReceiptEmail(paymentData, transactionId) {
     });
 
     // Generar la tabla de productos
-    const productRows = paymentData.carrito.map(item => `
+    const productRows = (paymentData.carrito || []).map(item => `
         <tr>
             <td>${item.quantity}</td>
             <td>${item.title}</td>
             <td>$${item.price}</td>
         </tr>
     `).join('');
+
 
     const mailOptions = {
         from: process.env.EMAIL_USER,
@@ -141,8 +142,7 @@ export async function POST(req) {
     return setCorsHeaders(response);
 }
 
-// Agregar soporte para preflight OPTIONS (opcional)
 export async function OPTIONS() {
     const response = new Response(null, { status: 200 });
-    return setCorsHeaders(response); // Agregar encabezados CORS
+    return setCorsHeaders(response); // Asegúrate de que los encabezados CORS sean correctos
 }
