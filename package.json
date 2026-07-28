@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "next": "16.2.6",
+    "next": "16.2.11",
     "nodemailer": "^9.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
